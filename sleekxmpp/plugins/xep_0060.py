@@ -1,6 +1,6 @@
 from __future__ import with_statement
 from . import base
-import logging
+import collections, logging
 #from xml.etree import cElementTree as ET
 from .. xmlstream.stanzabase import ElementBase, ET
 from . import stanza_pubsub
@@ -69,7 +69,7 @@ class xep_0060(base.base_plugin):
 		if result is False or result is None or result['type'] == 'error': return False
 		return True
 	
-	def unsubscribe(self, jid, node, bare=True, subscribee=None):
+	def unsubscribe(self, jid, node, bare=True, subscribee=None, subid=None):
 		pubsub = ET.Element('{http://jabber.org/protocol/pubsub}pubsub')
 		unsubscribe = ET.Element('unsubscribe')
 		unsubscribe.attrib['node'] = node
@@ -80,6 +80,8 @@ class xep_0060(base.base_plugin):
 				unsubscribe.attrib['jid'] = self.xmpp.fulljid
 		else:
 			unsubscribe.attrib['jid'] = subscribee
+		if subid is not None:
+			unsubscribe.attrib['subid'] = subid
 		pubsub.append(unsubscribe)
 		iq = self.xmpp.makeIqSet(pubsub)
 		iq.attrib['to'] = jid
@@ -135,9 +137,9 @@ class xep_0060(base.base_plugin):
 			results = result.findall('{http://jabber.org/protocol/pubsub#owner}pubsub/{http://jabber.org/protocol/pubsub#owner}subscriptions/{http://jabber.org/protocol/pubsub#owner}subscription')
 			if results is None:
 				return False
-			subs = {}
+			subs = collections.defaultdict(dict)
 			for sub in results:
-				subs[sub.get('jid')] = sub.get('subscription')
+				subs[sub.get('jid')][sub.get('subid')] = sub.get('subscription')
 			return subs
 
 	def getNodeAffiliations(self, jid, node):
