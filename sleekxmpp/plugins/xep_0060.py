@@ -245,6 +245,22 @@ class xep_0060(base.base_plugin):
 				nodes[item.get('node')] = item.get('name')
 		return nodes
 	
+        def getNodeInfo(self, jid, node):
+                response = self.xmpp.plugin['xep_0030'].getInfo(jid, node)
+                return self.parseInfo(response)
+
+        def parseInfo(self, xml):
+                if xml['type'] == 'error':
+                        return False
+		result = {'identity': {}, 'feature': []}
+                querynode = xml.findall('{http://jabber.org/protocol/disco#info}query')[0]
+                name = querynode.attrib['node']
+                type = querynode.findall('{http://jabber.org/protocol/disco#info}identity')[0].attrib['type']
+                result['identity'][name] = type
+		for feature in xml.findall('{http://jabber.org/protocol/disco#info}query/{http://jabber.org/protocol/disco#info}feature'):
+			result['feature'].append(feature.get('var', '__unknown__'))
+		return result
+
 	def getItems(self, jid, node):
 		response = self.xmpp.plugin['xep_0030'].getItems(jid, node)
 		items = response.findall('{http://jabber.org/protocol/disco#items}query/{http://jabber.org/protocol/disco#items}item')
